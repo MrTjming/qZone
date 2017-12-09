@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Text;
 using System.Web;
 
 /// <summary>
@@ -12,17 +14,89 @@ public class users
 {
     static string str = @"server=DESKTOP-UNR7NUM;Integrated Security=SSPI;database=qZone;";
 
+    public int checkNum(string txt,int min,int max)
+    {
+        if (txt.Length > max || txt.Length < min)
+            return 0;//返回0不符合
+        else return 1;//返回1符合
+    }
     public users()
     {
        
     }
     public int checkFriends(string user1,string user2) //判断是否为好友关系，其中user1和user2都是用户的 id （int型）
     {
-        string num1= operateData("select * from friends where user1= '" + user1 + "' and user2 = '" + user2 +"'" , -1, 0);
-        string num2 =operateData("select * from friends where user1= '" + user2 + "' and user2 = '" + user1+"'" , -1, 0);
+        string num1= operate(-1, 0, "select * from friends where user1=? and user2 =?", user1, user2); //operateData("select * from friends where user1= '" + user1 + "' and user2 = '" + user2 +"'" , -1, 0);
+        string num2 = operate(-1, 0, "select * from friends where user1=? and user2 =?", user2, user1);//operateData("select * from friends where user1= '" + user2 + "' and user2 = '" + user1+"'" , -1, 0);
         if (num1 == "1" || num2 == "1")
             return 1;
         else return 0;
+    }
+    public DataTable getAppoint(string userLogin, string whose,string type)
+    {
+        int num = Convert.ToInt32(operate(-1, 0, "select * from usergroup where (grouptype=? or grouptype=?) and visual like ? and whose =?", "power", "allpower", "%," + userLogin + ",%",whose));
+       DataTable newsData = new DataTable();
+        if(num>0)
+        {
+            newsData = getData("select * from "+type+"View where visual=" + operate(0, 0, "select id from usergroup where (grouptype='power' or grouptype='allpower') and visual like ? and whose =?", "%," + userLogin + ",%", whose) + " order by time desc");//new DataTable();
+          //  newsData = getData("select * from newsView where type='" + type + "' and display=" + operate(0, 0, "select id from usergroup where (grouptype='power' or grouptype='allpower') and visual like ? and whose =?", "%," + userLogin + ",%",whose) + " order by time desc");//new DataTable();
+            for (int n = 1; n < num; n++)
+            {
+                foreach (DataRow dr in getData("select * from " + type + "View where visual='" + operate(n, 0, "select id from usergroup where (grouptype='power' or grouptype='allpower') and visual like ? and whose =?", "%," + userLogin + ",%", whose) + "' order by time desc").Rows)
+
+               //     foreach (DataRow dr in getData("select * from newsView where type='" + type + "' and display='" + operate(n, 0, "select id from usergroup where (grouptype='power' or grouptype='allpower') and visual like ? and whose =?", "%," + userLogin + ",%",whose) + "' order by time desc").Rows)
+                {
+                    newsData.ImportRow(dr);
+                }
+            }
+            newsData.DefaultView.Sort = "time desc";
+
+        }
+
+        return newsData;
+
+
+        // int num = Convert.ToInt32(operate(-1, 0, "select * from twitter where whose =?"));
+    }
+    public DataTable getNews(string userLogin, string type)
+    {
+        int num = Convert.ToInt32(operate(-1, 0, "select * from usergroup where (grouptype=? or grouptype=?) and visual like ?", "power", "allpower", "%," + userLogin + ",%"));
+
+        DataTable newsData = new DataTable();
+        if (num > 0)
+        {
+            if (type != "")
+            {
+                newsData = getData("select * from newsView where type='" + type + "' and display=" + operate(0, 0, "select id from usergroup where (grouptype='power' or grouptype='allpower') and visual like ?", "%," + userLogin + ",%") + " order by time desc");//new DataTable();
+
+                for (int n = 1; n < num; n++)
+                {
+
+                    foreach (DataRow dr in getData("select * from newsView where type='" + type + "' and display='" + operate(n, 0, "select id from usergroup where (grouptype='power' or grouptype='allpower') and visual like ?", "%," + userLogin + ",%") + "' order by time desc").Rows)
+                    {
+                        newsData.ImportRow(dr);
+                    }
+
+                }
+                newsData.DefaultView.Sort = "time desc";
+            }
+            else
+            {
+                newsData = getData("select * from newsView where display='" + operate(0, 0, "select id from usergroup where( grouptype='power' or grouptype='allpower') and visual like ?", "%," + userLogin + ",%") + "' order by time desc");
+
+                for (int n = 1; n < num; n++)
+                {
+                    foreach (DataRow dr in getData("select * from newsView where display='" + operate(n, 0, "select id from usergroup where (grouptype='power' or grouptype='allpower') and visual like ?", "%," + userLogin + ",%") + "' order by time desc").Rows)
+                    {
+                        newsData.ImportRow(dr);
+                    }
+                }
+                newsData.DefaultView.Sort = "time desc";
+            }
+        }
+    
+        
+        return newsData;
     }
     public DataTable getData(string txt) //取得数据库
     {
@@ -35,21 +109,63 @@ public class users
         conn.Close();
         return dt;
     }
-
-    public string operateData(string sqlCmd, int Num1, int Num2) //(操作数据库，Num1=-1，为返回搜索到的数量)
+    public string operate (int Num1, int Num2,string sql, params object[] value)//DbCommand comm, //SqlDataReader//IDataReader
     {
-        string sql = sqlCmd;
-        int num1 = Num1;
-        int num2 = Num2;
+        SqlCommand comm = new SqlCommand();
+        string str = @"server=DESKTOP-UNR7NUM;Integrated Security=SSPI;database=qZone;";
         SqlConnection conn = new SqlConnection(str);
+        comm.CommandText = sql;
+        if (value != null && value.Length >= 0)
+        {
+            if (comm.CommandText.IndexOf("?") == -1)
+            {
+                string[] temp = sql.Split('@');
+                for (int i = 0; i < value.Length; i++)
+                {
+                    string pName;
+                    if (temp[i + 1].IndexOf(" ") > -1)
+                    {
+                        pName = "@" + temp[i + 1].Substring(0, temp[i + 1].IndexOf(" "));
+                    }
+                    else
+                    {
+                        pName = "@" + temp[i + 1];
+                    }
+                    //pName = "@p" + (i + 1).ToString();
+                    DbParameter p = comm.CreateParameter();
+                    p.DbType = DbType.String;
+                    p.ParameterName = pName;
+                    p.Value = value[i];
+                    comm.Parameters.Add(p);
+                }
+            }
+            else
+            {
+                string[] temp = sql.Split('?');
+                for (int i = 0; i < value.Length; i++)
+                {
+                    temp[i] = temp[i] + "@p" + (i + 1).ToString();
+                    string pName = "@p" + (i + 1).ToString();
+                    DbParameter p = comm.CreateParameter();
+                    p.DbType = DbType.String;
+                    p.ParameterName = pName;
+                    p.Value = value[i];
+                    comm.Parameters.Add(p);
+                }
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < temp.Length; i++)
+                {
+                    sb.Append(temp[i]);
+                }
+                comm.CommandText = sb.ToString();
+            }
+        }
+        comm.Connection = conn;
         System.Data.DataTable dt = new DataTable();
-        conn.Open();
-        SqlDataAdapter da = new SqlDataAdapter(sql, conn);
+        SqlDataAdapter da = new SqlDataAdapter();
+        da.SelectCommand = comm;
         da.Fill(dt);
-        conn.Close();
-
-
-        if (num1 == -1)
+        if (Num1 == -1)
         {
             int num = dt.Rows.Count;
             return Convert.ToString(num);
@@ -57,13 +173,54 @@ public class users
 
         else
         {
-            string text = Convert.ToString(dt.Rows[num1][num2]);
+            string text = Convert.ToString(dt.Rows[Num1][Num2]);
             return text;
         }
-
-
-
     }
+    //public string data(string sqlcmd)  //参数化查询 --坯
+    //{
+    //    SqlConnection conn = new SqlConnection(str);
+    //    System.Data.DataTable dt = new DataTable();
+    //    conn.Open();
+    //    SqlCommand selectCmd = new SqlCommand();
+    //    selectCmd.CommandText = "select * from users where name=@sn";
+    //    selectCmd.Parameters.Add("@sn", SqlDbType.VarChar);
+    //    selectCmd.Parameters["@sn"].Value = sqlcmd;
+    //    selectCmd.Connection = conn;
+    //    SqlDataAdapter sda = new SqlDataAdapter();
+    //    sda.SelectCommand = selectCmd;
+    //    sda.Fill(dt);
+    //    conn.Close();
+    //    return Convert.ToString( dt.Rows.Count);
+    //}
+    //public string operateData(string sqlCmd, int Num1, int Num2) //(操作数据库，Num1=-1，为返回搜索到的数量)
+    //{
+    //    string sql = sqlCmd;
+    //    int num1 = Num1;
+    //    int num2 = Num2;
+    //    SqlConnection conn = new SqlConnection(str);
+    //    System.Data.DataTable dt = new DataTable();
+    //    conn.Open();
+    //    SqlDataAdapter da = new SqlDataAdapter(sql, conn);
+    //    da.Fill(dt);
+    //    conn.Close();
+
+
+    //    if (num1 == -1)
+    //    {
+    //        int num = dt.Rows.Count;
+    //        return Convert.ToString(num);
+    //    }
+
+    //    else
+    //    {
+    //        string text = Convert.ToString(dt.Rows[num1][num2]);
+    //        return text;
+    //    }
+
+
+
+    //}
     public int checklegal(string txt) //检测输入的文本是否符合 帐号密码的 输入规范
     {
         string text = txt;

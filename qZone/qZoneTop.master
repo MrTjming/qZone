@@ -12,15 +12,21 @@
 <body>
     <form id="form1" runat="server">
     <div>
-         --<asp:Label ID="whoseZone" runat="server" ForeColor="#CC6600"></asp:Label>的QQ空间----------------<asp:Label ID="uNAME" runat="server" ></asp:Label> &nbsp <asp:LinkButton ID="logout" Text="注销" runat="server" OnClick="logout_Click" ></asp:LinkButton>&nbsp
+         --<asp:Label ID="whoseZone" runat="server" ForeColor="#CC6600"></asp:Label>的<asp:Label id="zoneName" runat="server"></asp:Label> ----------
+        <asp:LinkButton ID="menu" Text="个人中心" runat="server" OnClick="menu_Click" ></asp:LinkButton> &nbsp
+        <asp:LinkButton ID="myFriends" Text="好友" runat="server" OnClick="myFriends_Click" ></asp:LinkButton>&nbsp
+        <asp:LinkButton ID="setting" Text="设置" runat="server" OnClick="setting_Click" ></asp:LinkButton>&nbsp
+        <asp:LinkButton ID="logout" Text="注销" runat="server" OnClick="logout_Click" ></asp:LinkButton>&nbsp
+        <br />
+        <asp:TextBox ID="introduce" runat="server" BackColor="White" BorderColor="White" BorderStyle="None" Enabled="False" Height="33px" Width="579px" ></asp:TextBox>
         <br /> 
-           <asp:LinkButton ID="menu" Text="个人中心" runat="server" OnClick="menu_Click" ></asp:LinkButton> &nbsp
-            <asp:LinkButton ID="LinkButton3" Text="日志" runat="server" ></asp:LinkButton>&nbsp
-            <asp:LinkButton ID="LinkButton5" Text="相册" runat="server" ></asp:LinkButton>&nbsp
-            <asp:LinkButton ID="LinkButton4" Text="留言板" runat="server" ></asp:LinkButton>&nbsp
-            <asp:LinkButton ID="LinkButton6" Text="说说" runat="server" ></asp:LinkButton>&nbsp
-            <asp:LinkButton ID="btnPersonalInfo" Text="个人档" runat="server" OnClick="btnPersonalInfo_Click" ></asp:LinkButton>&nbsp
-        <asp:LinkButton ID="myFriends" Text="我的好友" runat="server" OnClick="myFriends_Click" ></asp:LinkButton>&nbsp
+           
+            <asp:LinkButton ID="btnJournal" Text="日志" runat="server" OnClick="btnJournal_Click" ></asp:LinkButton>&nbsp
+            <asp:LinkButton ID="btnAlbum" Text="相册" runat="server" OnClick="btnAlbum_Click" ></asp:LinkButton>&nbsp
+            <asp:LinkButton ID="btnMsgBoard" Text="留言板" runat="server" OnClick="btnMsgBoard_Click" ></asp:LinkButton>&nbsp
+            <asp:LinkButton ID="btnTwitter" Text="说说" runat="server" OnClick="btnTwitter_Click" ></asp:LinkButton>&nbsp
+            <asp:LinkButton ID="btnuserInfoPage" Text="个人档" runat="server" OnClick="btnuserInfoPage_Click" ></asp:LinkButton>&nbsp
+        
         <asp:ContentPlaceHolder id="ContentPlaceHolder1" runat="server">
        
         </asp:ContentPlaceHolder>
