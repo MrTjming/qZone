@@ -58,14 +58,14 @@ public class users
 
         // int num = Convert.ToInt32(operate(-1, 0, "select * from twitter where whose =?"));
     }
-    public DataTable getNews(string userLogin, string type)
+    public DataTable getNews(string userLogin, string type)//获取id为userLogin的可见动态 type为动态类型,留空为全部类型
     {
         int num = Convert.ToInt32(operate(-1, 0, "select * from usergroup where (grouptype=? or grouptype=?) and visual like ?", "power", "allpower", "%," + userLogin + ",%"));
 
         DataTable newsData = new DataTable();
         if (num > 0)
         {
-            if (type != "")
+            if (type != "")//获取指定类型动态
             {
                 newsData = getData("select * from newsView where type='" + type + "' and display=" + operate(0, 0, "select id from usergroup where (grouptype='power' or grouptype='allpower') and visual like ?", "%," + userLogin + ",%") + " order by time desc");//new DataTable();
 
@@ -80,7 +80,7 @@ public class users
                 }
                 newsData.DefaultView.Sort = "time desc";
             }
-            else
+            else//获取全部类型的动态
             {
                 newsData = getData("select * from newsView where display='" + operate(0, 0, "select id from usergroup where( grouptype='power' or grouptype='allpower') and visual like ?", "%," + userLogin + ",%") + "' order by time desc");
 

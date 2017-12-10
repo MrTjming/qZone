@@ -21,6 +21,36 @@ public partial class _default : checkLogin //System.Web.UI.Page//
             btnWrite.Visible = false;
             btnManageType.Visible = false;
         }
+        if (Convert.ToString(Request.QueryString["which"]) != "" && Request.QueryString["which"] != null)//判断问号传值是否存在
+        {
+            if(!IsPostBack && user.operate(-1,0,"select * from journal where id =?", Request.QueryString["which"])!="0")
+            {
+
+                watchJournal.Visible = true;
+                journalList.Visible = false;
+                string id = Convert.ToString(Request.QueryString["which"]);
+                Session["journalId"] = id;
+                titleDisplay.Text = user.operate(0, 0, "select title from journal where id =?", id);
+                typeDisplay.Text = user.operate(0, 0, "select name from usergroup where id=?", user.operate(0, 0, "select type from journal where id =?", id));
+                journalDisplay.Text = user.operate(0, 0, "select text from journal where id =?", id);
+                journalId.Text = id;
+                string num = user.operate(0, 0, "select num from thumbsup where which =? and type=?", id, "journal");
+                if (num != "0")
+                {
+                    goodNameDisplay.Text = user.operate(0, 0, "select whonickname from thumbsup where which =? and type=?", id, "journal") + "等" + num + "人赞了该日志";
+                }
+                else goodNameDisplay.Visible = false;
+                if (user.operate(-1, 0, "select * from thumbsup where which =? and type =? and whoid like ?", id, "journal", "%," + userLogin + ",%") != "0")
+                {
+                    toGood.Text = "取消赞";
+                }
+
+                sql1.Text = "select * from replyView where type='journal' and towhich=" + id + " order by time desc";
+                DataBindToRepeater(1);
+            }
+            
+        }
+        else 
         if (!IsPostBack)
         {
             typeList.DataValueField = "id";
@@ -58,28 +88,29 @@ public partial class _default : checkLogin //System.Web.UI.Page//
 
         if (e.CommandName == "watch")
         {
-            watchJournal.Visible = true;
-            journalList.Visible = false;
-            string id = Convert.ToString(e.CommandArgument.ToString());
-            Session["journalId"] = id;
-            titleDisplay.Text = user.operate(0, 0, "select title from journal where id =?", id);
-            typeDisplay.Text = user.operate(0, 0, "select name from usergroup where id=?", user.operate(0, 0, "select type from journal where id =?", id));
-            journalDisplay.Text = user.operate(0, 0, "select text from journal where id =?", id);
-            journalId.Text = id;
-            string userLogin = Convert.ToString(Session["name"]);
-            string num = user.operate(0, 0, "select num from thumbsup where which =? and type=?", id, "journal");
-            if (num != "0")
-            {
-                goodNameDisplay.Text = user.operate(0, 0, "select whonickname from thumbsup where which =? and type=?", id, "journal") + "等" +num + "人赞了该日志";
-            }
-            else goodNameDisplay.Visible = false;
-            if (user.operate(-1, 0, "select * from thumbsup where which =? and type =? and whoid like ?", id, "journal", "%," + userLogin + ",%") != "0")
-            {
-                toGood.Text = "取消赞";
-            }
+            Response.Redirect(Request.RawUrl +"&which="+e.CommandArgument.ToString());
+            //watchJournal.Visible = true;
+            //journalList.Visible = false;
+            //string id = Convert.ToString(e.CommandArgument.ToString());
+            //Session["journalId"] = id;
+            //titleDisplay.Text = user.operate(0, 0, "select title from journal where id =?", id);
+            //typeDisplay.Text = user.operate(0, 0, "select name from usergroup where id=?", user.operate(0, 0, "select type from journal where id =?", id));
+            //journalDisplay.Text = user.operate(0, 0, "select text from journal where id =?", id);
+            //journalId.Text = id;
+            //string userLogin = Convert.ToString(Session["name"]);
+            //string num = user.operate(0, 0, "select num from thumbsup where which =? and type=?", id, "journal");
+            //if (num != "0")
+            //{
+            //    goodNameDisplay.Text = user.operate(0, 0, "select whonickname from thumbsup where which =? and type=?", id, "journal") + "等" +num + "人赞了该日志";
+            //}
+            //else goodNameDisplay.Visible = false;
+            //if (user.operate(-1, 0, "select * from thumbsup where which =? and type =? and whoid like ?", id, "journal", "%," + userLogin + ",%") != "0")
+            //{
+            //    toGood.Text = "取消赞";
+            //}
 
-            sql1.Text = "select * from replyView where type='journal' and towhich=" + id + " order by time desc";
-            DataBindToRepeater(1);
+            //sql1.Text = "select * from replyView where type='journal' and towhich=" + id + " order by time desc";
+            //DataBindToRepeater(1);
         }
         if (e.CommandName == "delete")
         {
@@ -430,6 +461,7 @@ public partial class _default : checkLogin //System.Web.UI.Page//
             string userLogin = Convert.ToString(Session["name"]);
             user.operate(-1, 0, "insert into reply (type,text,whose,towhich,time) values (?,?,?,?,?)", "journal", Server.HtmlEncode(replyText.Text), userLogin, journalId.Text, time);
             Response.Write("<script language=javascript>alert('回复成功');</script>");
+            Response.Redirect(Request.RawUrl );
 
         }
         else Response.Write("<script>alert('留言内容不能为空!')</script>");
@@ -479,15 +511,12 @@ public partial class _default : checkLogin //System.Web.UI.Page//
             TextBox reply = (TextBox)e.Item.FindControl("replyText");
             if (reply.Text != "")
             {
-
                 string time = DateTime.Now.ToString();
                 string userLogin = Convert.ToString(Session["name"]);
-
-                user.operate(-1, 0, "insert into reply (type,time,whose,text,towhich) values(?,?,?,?,?)", "journal", time, userLogin, Server.HtmlEncode(reply.Text), e.CommandArgument.ToString());
-                Response.Write("<script language=javascript>alert('发表成功');window.location = 'photoPage.aspx?id='" + Convert.ToString(Session["name"]) + ";</script>");
+                user.operate(-1, 0, "insert into reply (type,time,whose,text,towhich) values(?,?,?,?,?)", "journal", time, userLogin, reply.Text, e.CommandArgument.ToString());
+                Response.Redirect(Request.RawUrl );
             }
             else Response.Write("<script>alert('留言内容不能为空!')</script>");
-
         }
     }
 

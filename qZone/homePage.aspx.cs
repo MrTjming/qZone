@@ -70,7 +70,7 @@ public partial class _Default : System.Web.UI.Page
         {
             string type = user.operate(0, 0, "select type from news where id=?", e.CommandArgument.ToString());
             string userid = user.operate(0, 0, "Select whose from news where id=?", e.CommandArgument.ToString());
-            Response.Redirect(type + "Page.aspx?id=" + userid);
+            Response.Redirect(type + "Page.aspx?id=" + userid+"&which="+user.operate(0,0,"select which from news where id =?", e.CommandArgument.ToString()));
         }
         else if(e.CommandName=="good")
         {

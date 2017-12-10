@@ -1,5 +1,4 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/qZoneTop.master" AutoEventWireup="true" CodeFile="journalPage.aspx.cs" Inherits="_default" %>
-
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/qZoneTop.master" AutoEventWireup="true" CodeFile="journalPage.aspx.cs" Inherits="_default"  %>
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
     <script type="text/javascript" src="../ueditor/ueditor.config.js"></script>
     <script type="text/javascript" src="../ueditor/ueditor.all.js"></script>

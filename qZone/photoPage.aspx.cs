@@ -19,23 +19,58 @@ public partial class _default : checkLogin
             addList.Visible = false;
             toAddPhoto.Visible = false;
         }
-        if (!IsPostBack)//绑定相册列表数据
+        if(Convert.ToString(Request.QueryString["which"])!=""&& Request.QueryString["which"] !=null )
         {
-            albumList.DataValueField = "id";
-            albumList.DataTextField = "name";
-            albumList.DataSource = user.getData("select * from usergroup where whose = " + userid + " and grouptype = 'album'");
-            albumList.DataBind();
-            if(userid==userLogin)
+            if(!IsPostBack && user.operate(-1, 0, "select * from photo where id =?", Request.QueryString["which"]) != "0")
             {
-                dlphoto.DataSource = user.getData("select * from usergroup where whose =" + userid + " and grouptype='album'");
-            }
-            else
-            {
-                dlphoto.DataSource = user.getData("select * from usergroup where grouptype='album' and whose =" + userid  + " and visual in(select id from usergroup where whose =" + userid + " and visual like '%," + userLogin + ",%')");
+                addList.Visible = false;
+                addPhoto.Visible = false;
+                albumDisplay.Visible = false;
+                photoIntoDisplay.Visible = true;
+                string id = Convert.ToString(Request.QueryString["which"]);
+                photoId.Text = id;
+                photo.ImageUrl = user.operate(0, 0, "select address from photo where id =?", id);
+                photoInfoName.Text = user.operate(0, 0, "select name from photo where id =?", id);
+                photoInfoTime.Text = user.operate(0, 0, "select time from photo where id =?", id);
+                photoInfoIntroduce.Text = user.operate(0, 0, "select introduce from photo where id =?", id);
+                sql1.Text = "select * from replyView where type='photo' and towhich=" + id + " order by time desc";
+                string num = user.operate(0, 0, "select num from thumbsup where which =? and type=?", id, "photo");
+                if (num != "0")//判断点赞数
+                {
+                    goodNameDisplay.Text = user.operate(0, 0, "select whonickname from thumbsup where which =? and type=?", id, "photo") + "等" + num + "人赞了该照片";
+                }
+                else goodNameDisplay.Visible = false;
+
+                if (user.operate(-1, 0, "select * from thumbsup where which =? and type =? and whoid like ?", id, "photo", "%," + userLogin + ",%") != "0")
+                {
+                    toGood.Text = "取消赞";
+                }
+
+                DataBindToRepeater(1);
             }
             
-            dlphoto.DataBind();
         }
+        else
+        {
+            if (!IsPostBack)//绑定相册列表数据
+            {
+                albumList.DataValueField = "id";
+                albumList.DataTextField = "name";
+                albumList.DataSource = user.getData("select * from usergroup where whose = " + userid + " and grouptype = 'album'");
+                albumList.DataBind();
+                if (userid == userLogin)
+                {
+                    dlphoto.DataSource = user.getData("select * from usergroup where whose =" + userid + " and grouptype='album'");
+                }
+                else
+                {
+                    dlphoto.DataSource = user.getData("select * from usergroup where grouptype='album' and whose =" + userid + " and visual in(select id from usergroup where whose =" + userid + " and visual like '%," + userLogin + ",%')");
+                }
+
+                dlphoto.DataBind();
+            }
+        }
+        
 
     }
 
@@ -141,6 +176,14 @@ public partial class _default : checkLogin
         }
         else if(e.CommandName=="del")//删除相册
         {
+            int num = Convert.ToInt32(user.operate(-1, 0, "select * from photo where whichgroup =?", e.CommandArgument.ToString()));
+            for (int a=0;a<num;a++)
+            {
+                string tmpRootDir = HttpContext.Current.Server.MapPath(System.Web.HttpContext.Current.Request.ApplicationPath.ToString());//获取程序根目录  
+                string strUrl = user.operate(0, 0, "Select address from photo where id=?", user.operate(a,0,"select id from photo where whichgroup =?", e.CommandArgument.ToString()));//获取绝对目录
+                string urlPath = tmpRootDir + strUrl.Replace(@"/", @"/");//将绝对目录转化为实际目录
+                System.IO.File.Delete(urlPath);//删除图片文件
+            }
             user.operate(-1, 0, "delete from photo where whichgroup=?", e.CommandArgument.ToString());
                 user.operate(-1, 0, "delete from usergroup where id =?", e.CommandArgument.ToString());
                 Response.Redirect("photoPage.aspx?id=" + Convert.ToString(Session["name"]));
@@ -159,7 +202,11 @@ public partial class _default : checkLogin
             if (user.operate(0, 0, "select extra from usergroup where id = ?", whichgroup) == user.operate(0, 0, "select address from photo where id=?", Convert.ToString(e.CommandArgument.ToString())))
             {
                 //上面检测所属相册的封面是否是待删相片,若是则执行
-                user.operate(-1, 0, "delete from photo where id =?", Convert.ToString(e.CommandArgument.ToString()));
+                string tmpRootDir = HttpContext.Current.Server.MapPath(System.Web.HttpContext.Current.Request.ApplicationPath.ToString());//获取程序根目录  
+                string strUrl = user.operate(0, 0, "Select address from photo where id=?", e.CommandArgument.ToString());//获取绝对目录
+                string urlPath = tmpRootDir + strUrl.Replace(@"/", @"/");//将绝对目录转化为实际目录
+                System.IO.File.Delete(urlPath);//删除图片文件
+                user.operate(-1, 0, "delete from photo where id =?", Convert.ToString(e.CommandArgument.ToString()));//删除数据库记录
                 if(user.operate(-1,0,"select * from photo where whichgroup=?",whichgroup)!="0")//检测删除后相册内是否还有相片,若有则选择第一张做封面
                 {
                      string newAddress = user.operate(0, 0, "select address from photo where whichgroup=?", whichgroup);
@@ -167,40 +214,50 @@ public partial class _default : checkLogin
                 }
                 else//否则用 默认图做封面
                 {
+
                     user.operate(-1, 0, "update usergroup set extra =? where id =?", "Photos/nophoto.png", whichgroup);
                 }
             }
-            else user.operate(-1, 0, "delete from photo where id =?", Convert.ToString(e.CommandArgument.ToString()));
+            else
+            {
+                string tmpRootDir = HttpContext.Current.Server.MapPath(System.Web.HttpContext.Current.Request.ApplicationPath.ToString());//获取程序根目录  
+                string strUrl = user.operate(0, 0, "Select address from photo where id=?", e.CommandArgument.ToString());
+                string urlPath = tmpRootDir + strUrl.Replace(@"/", @"/");
+                System.IO.File.Delete(urlPath);//删除图片文件
+                user.operate(-1, 0, "delete from photo where id =?", Convert.ToString(e.CommandArgument.ToString()));//删除数据库记录
+            }
+               
+
             Response.Write("<script>alert('删除成功!')</script>");
             Response.Redirect("photoPage.aspx?id=" + Convert.ToString(Session["name"]));
         }
         if (e.CommandName == "watch")//查看相片
         {
-            
-            albumDisplay.Visible = false;
-            photoIntoDisplay.Visible = true;
-            string id= e.CommandArgument.ToString();
-            photoId.Text = id;
-            photo.ImageUrl = user.operate(0, 0, "select address from photo where id =?", id);
-            photoInfoName.Text = user.operate(0, 0, "select name from photo where id =?", id);
-            photoInfoTime.Text = user.operate(0, 0, "select time from photo where id =?", id);
-            photoInfoIntroduce.Text = user.operate(0, 0, "select introduce from photo where id =?", id);
-            sql1.Text="select * from replyView where type='photo' and towhich="+id+" order by time desc";
+            Response.Redirect(Request.RawUrl + "&which=" + e.CommandArgument.ToString());
+            //albumDisplay.Visible = false;
+            //photoIntoDisplay.Visible = true;
+            //string id= e.CommandArgument.ToString();
+            //photoId.Text = id;
+            //photo.ImageUrl = user.operate(0, 0, "select address from photo where id =?", id);
+            //photoInfoName.Text = user.operate(0, 0, "select name from photo where id =?", id);
+            //photoInfoTime.Text = user.operate(0, 0, "select time from photo where id =?", id);
+            //photoInfoIntroduce.Text = user.operate(0, 0, "select introduce from photo where id =?", id);
+            //sql1.Text="select * from replyView where type='photo' and towhich="+id+" order by time desc";
 
-            string userLogin = Convert.ToString(Session["name"]);
-            string num = user.operate(0, 0, "select num from thumbsup where which =? and type=?", id, "photo");
-            if (num != "0")//判断点赞数
-            {
-                goodNameDisplay.Text = user.operate(0, 0, "select whonickname from thumbsup where which =? and type=?", id, "photo") + "等" + num + "人赞了该照片";
-            }
-            else goodNameDisplay.Visible = false;
+            //string userLogin = Convert.ToString(Session["name"]);
+            //string num = user.operate(0, 0, "select num from thumbsup where which =? and type=?", id, "photo");
+            //if (num != "0")//判断点赞数
+            //{
+            //    goodNameDisplay.Text = user.operate(0, 0, "select whonickname from thumbsup where which =? and type=?", id, "photo") + "等" + num + "人赞了该照片";
+            //}
+            //else goodNameDisplay.Visible = false;
            
-            if (user.operate(-1, 0, "select * from thumbsup where which =? and type =? and whoid like ?", id, "photo", "%," + userLogin + ",%") != "0")
-            {
-                toGood.Text = "取消赞";
-            }
+            //if (user.operate(-1, 0, "select * from thumbsup where which =? and type =? and whoid like ?", id, "photo", "%," + userLogin + ",%") != "0")
+            //{
+            //    toGood.Text = "取消赞";
+            //}
 
-            DataBindToRepeater(1);
+            //DataBindToRepeater(1);
         }
 
         if(e.CommandName=="cover")
@@ -514,7 +571,7 @@ public partial class _default : checkLogin
                 string time = DateTime.Now.ToString();
                 string userLogin = Convert.ToString(Session["name"]);
                 user.operate(-1, 0, "insert into reply (type,time,whose,text,towhich) values(?,?,?,?,?)", "photo", time, userLogin, Server.HtmlEncode(reply.Text), e.CommandArgument.ToString());
-                Response.Write("<script language=javascript>alert('发表成功');window.location = '" + Request.RawUrl + "';</script>");
+                Response.Redirect(Request.RawUrl);
             }
             else Response.Write("<script>alert('留言内容不能为空!')</script>");
         }
