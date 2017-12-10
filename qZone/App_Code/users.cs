@@ -109,47 +109,46 @@ public class users
         conn.Close();
         return dt;
     }
-    public string operate (int Num1, int Num2,string sql, params object[] value)//DbCommand comm, //SqlDataReader//IDataReader
+    public string operate (int Num1, int Num2,string sql, params object[] trueValue)//操作数据库
     {
         SqlCommand comm = new SqlCommand();
         string str = @"server=DESKTOP-UNR7NUM;Integrated Security=SSPI;database=qZone;";
         SqlConnection conn = new SqlConnection(str);
         comm.CommandText = sql;
-        if (value != null && value.Length >= 0)
+        if (trueValue != null && trueValue.Length >= 0)
         {
-            if (comm.CommandText.IndexOf("?") == -1)
+            if (comm.CommandText.IndexOf("?") == -1)//检测sql文本中的'?'
             {
                 string[] temp = sql.Split('@');
-                for (int i = 0; i < value.Length; i++)
+                for (int i = 0; i < trueValue.Length; i++)
                 {
-                    string pName;
+                    string parameter;
                     if (temp[i + 1].IndexOf(" ") > -1)
                     {
-                        pName = "@" + temp[i + 1].Substring(0, temp[i + 1].IndexOf(" "));
+                        parameter = "@" + temp[i + 1].Substring(0, temp[i + 1].IndexOf(" "));
                     }
                     else
                     {
-                        pName = "@" + temp[i + 1];
+                        parameter = "@" + temp[i + 1];
                     }
-                    //pName = "@p" + (i + 1).ToString();
                     DbParameter p = comm.CreateParameter();
                     p.DbType = DbType.String;
-                    p.ParameterName = pName;
-                    p.Value = value[i];
+                    p.ParameterName = parameter;
+                    p.Value = trueValue[i];
                     comm.Parameters.Add(p);
                 }
             }
             else
             {
                 string[] temp = sql.Split('?');
-                for (int i = 0; i < value.Length; i++)
+                for (int i = 0; i < trueValue.Length; i++)
                 {
                     temp[i] = temp[i] + "@p" + (i + 1).ToString();
-                    string pName = "@p" + (i + 1).ToString();
+                    string parameter = "@p" + (i + 1).ToString();
                     DbParameter p = comm.CreateParameter();
                     p.DbType = DbType.String;
-                    p.ParameterName = pName;
-                    p.Value = value[i];
+                    p.ParameterName = parameter;
+                    p.Value = trueValue[i];
                     comm.Parameters.Add(p);
                 }
                 StringBuilder sb = new StringBuilder();
@@ -177,50 +176,7 @@ public class users
             return text;
         }
     }
-    //public string data(string sqlcmd)  //参数化查询 --坯
-    //{
-    //    SqlConnection conn = new SqlConnection(str);
-    //    System.Data.DataTable dt = new DataTable();
-    //    conn.Open();
-    //    SqlCommand selectCmd = new SqlCommand();
-    //    selectCmd.CommandText = "select * from users where name=@sn";
-    //    selectCmd.Parameters.Add("@sn", SqlDbType.VarChar);
-    //    selectCmd.Parameters["@sn"].Value = sqlcmd;
-    //    selectCmd.Connection = conn;
-    //    SqlDataAdapter sda = new SqlDataAdapter();
-    //    sda.SelectCommand = selectCmd;
-    //    sda.Fill(dt);
-    //    conn.Close();
-    //    return Convert.ToString( dt.Rows.Count);
-    //}
-    //public string operateData(string sqlCmd, int Num1, int Num2) //(操作数据库，Num1=-1，为返回搜索到的数量)
-    //{
-    //    string sql = sqlCmd;
-    //    int num1 = Num1;
-    //    int num2 = Num2;
-    //    SqlConnection conn = new SqlConnection(str);
-    //    System.Data.DataTable dt = new DataTable();
-    //    conn.Open();
-    //    SqlDataAdapter da = new SqlDataAdapter(sql, conn);
-    //    da.Fill(dt);
-    //    conn.Close();
-
-
-    //    if (num1 == -1)
-    //    {
-    //        int num = dt.Rows.Count;
-    //        return Convert.ToString(num);
-    //    }
-
-    //    else
-    //    {
-    //        string text = Convert.ToString(dt.Rows[num1][num2]);
-    //        return text;
-    //    }
-
-
-
-    //}
+   
     public int checklegal(string txt) //检测输入的文本是否符合 帐号密码的 输入规范
     {
         string text = txt;
